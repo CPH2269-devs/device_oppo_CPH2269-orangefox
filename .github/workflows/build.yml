@@ -15,7 +15,7 @@ on:
       DEVICE_TREE:
         description: 'OrangeFox Device Tree'
         required: true
-        default: 'https://github.com/secr5t/device_oppo_CPH2269/'
+        default: 'https://github.com/CPH2269-devs/device_oppo_CPH2269-orangefox'
       DEVICE_TREE_BRANCH:
         description: 'OrangeFox Device Tree Branch'
         required: true
@@ -41,12 +41,23 @@ on:
           - 'boot'
           - 'recovery'
           - 'vendorboot'
+  push:
+    branches:
+      - fox-12.1
 
 jobs:
   build:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+    env:
+      MANIFEST_BRANCH: ${{ inputs.MANIFEST_BRANCH || '12.1' }}
+      DEVICE_TREE: ${{ inputs.DEVICE_TREE || 'https://github.com/CPH2269-devs/device_oppo_CPH2269-orangefox' }}
+      DEVICE_TREE_BRANCH: ${{ inputs.DEVICE_TREE_BRANCH || 'fox-12.1' }}
+      DEVICE_PATH: ${{ inputs.DEVICE_PATH || 'device/oppo/CPH2269' }}
+      DEVICE_NAME: ${{ inputs.DEVICE_NAME || 'CPH2269' }}
+      MAKEFILE_NAME: ${{ inputs.MAKEFILE_NAME || 'twrp_CPH2269' }}
+      BUILD_TARGET: ${{ inputs.BUILD_TARGET || 'recovery' }}
     steps:
       - name: Set Build Start and Date
         run: |
@@ -56,7 +67,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-                  
+                   
       - name: Clean-up
         uses: rokibhasansagar/slimhub_actions@main
 
@@ -80,13 +91,13 @@ jobs:
           git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           cd sync
-          ./orangefox_sync.sh --branch "${{ inputs.MANIFEST_BRANCH }}" --path "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
+          ./orangefox_sync.sh --branch "${{ env.MANIFEST_BRANCH }}" --path "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ env.MANIFEST_BRANCH }}"
 
       - name: Clone Device Tree
         run: |
-          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
-          git clone "${{ inputs.DEVICE_TREE }}" -b "${{ inputs.DEVICE_TREE_BRANCH }}" "./${{ inputs.DEVICE_PATH }}"
-          cd "./${{ inputs.DEVICE_PATH }}"
+          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ env.MANIFEST_BRANCH }}"
+          git clone "${{ env.DEVICE_TREE }}" -b "${{ env.DEVICE_TREE_BRANCH }}" "./${{ env.DEVICE_PATH }}"
+          cd "./${{ env.DEVICE_PATH }}"
           
           echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "SHORT_COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -95,7 +106,7 @@ jobs:
 
       - name: Get OrangeFox Recovery Commit
         run: |
-          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery"
+          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ env.MANIFEST_BRANCH }}/bootable/recovery"
 
           echo "OF_COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "OF_SHORT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -104,7 +115,7 @@ jobs:
 
       - name: Building OrangeFox
         run: |
-          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}"
+          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ env.MANIFEST_BRANCH }}"
           
           set +e
           source build/envsetup.sh
@@ -112,21 +123,21 @@ jobs:
           
           export ALLOW_MISSING_DEPENDENCIES=true
           
-          if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
-            LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-ap2a-eng"
+          if [ "${{ env.MANIFEST_BRANCH }}" = "14.1" ]; then
+            LUNCH_TARGET="${{ env.MAKEFILE_NAME }}-ap2a-eng"
           else
-            LUNCH_TARGET="${{ inputs.MAKEFILE_NAME }}-eng"
+            LUNCH_TARGET="${{ env.MAKEFILE_NAME }}-eng"
           fi
 
           lunch "$LUNCH_TARGET" || { echo "Lunch failed"; exit 1; }
           
           make clean
           
-          mka adbd "${{ inputs.BUILD_TARGET }}image"
+          mka adbd "${{ env.BUILD_TARGET }}image"
 
       - name: Rename Build Outputs
         run: |
-          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}"
+          cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ env.MANIFEST_BRANCH }}/out/target/product/${{ env.DEVICE_NAME }}"
           
           for f in OrangeFox*.img; do
             [ -e "$f" ] && mv "$f" "${f%.img}-${{ env.BUILD_DATE }}.img"
@@ -139,41 +150,41 @@ jobs:
       - name: Create Release Notes
         run: |
           cat <<EOF > release_notes.md
-          OrangeFox Branch: ${{ inputs.MANIFEST_BRANCH }}
+          OrangeFox Branch: ${{ env.MANIFEST_BRANCH }}
 
-          Device: ${{ inputs.DEVICE_NAME }}
-          Image Build Target: ${{ inputs.BUILD_TARGET }}
+          Device: ${{ env.DEVICE_NAME }}
+          Image Build Target: ${{ env.BUILD_TARGET }}
           
-          Device Tree Repo: [Device Tree](${{ inputs.DEVICE_TREE }})
-          Device Tree Branch: ${{ inputs.DEVICE_TREE_BRANCH }}
+          Device Tree Repo: [Device Tree](${{ env.DEVICE_TREE }})
+          Device Tree Branch: ${{ env.DEVICE_TREE_BRANCH }}
           
           OrangeFox Recovery Commit:
           [${{ env.OF_SHORT_COMMIT }}](https://gitlab.com/OrangeFox/bootable/Recovery/-/commit/${{ env.OF_COMMIT_ID }}) - ${{ env.OF_COMMIT_TITLE }} (${{ env.OF_COMMIT_DATE }})
 
           Device Tree Commit:
-          [${{ env.SHORT_COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) - ${{ env.COMMIT_TITLE }} (${{ env.COMMIT_DATE }})
+          [${{ env.SHORT_COMMIT_ID }}](${{ env.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) - ${{ env.COMMIT_TITLE }} (${{ env.COMMIT_DATE }})
           EOF
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
-            OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-          name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} (${{ env.BUILD_DATE }}) (${{ env.SHORT_COMMIT_ID }})
-          tag_name: ${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}
+            OrangeFox/fox_${{ env.MANIFEST_BRANCH }}/out/target/product/${{ env.DEVICE_NAME }}/OrangeFox*.img
+            OrangeFox/fox_${{ env.MANIFEST_BRANCH }}/out/target/product/${{ env.DEVICE_NAME }}/OrangeFox*.zip
+          name: OrangeFox Recovery for ${{ env.DEVICE_NAME }} (${{ env.BUILD_DATE }}) (${{ env.SHORT_COMMIT_ID }})
+          tag_name: ${{ env.DEVICE_NAME }}-${{ env.BUILD_DATE }}
           body_path: release_notes.md
           prerelease: true
 
       - name: Send Notification to Telegram
         run: |
-          OUT_DIR="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}"
+          OUT_DIR="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ env.MANIFEST_BRANCH }}/out/target/product/${{ env.DEVICE_NAME }}"
           FILE=$(find "$OUT_DIR" -maxdepth 1 -type f -name "OrangeFox*.img" | head -n 1)
 
           if [ -n "$FILE" ]; then
             FILE_NAME=$(basename "$FILE")
             MD5_VAL=$(md5sum "$FILE" | cut -d ' ' -f 1)
-            DIRECT_LINK="https://github.com/${{ github.repository }}/releases/download/${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}/${FILE_NAME}"
+            DIRECT_LINK="https://github.com/${{ github.repository }}/releases/download/${{ env.DEVICE_NAME }}-${{ env.BUILD_DATE }}/${FILE_NAME}"
 
             ACTOR_CLEAN=$(echo "${{ github.actor }}" | tr -d '@')
 
@@ -191,7 +202,7 @@ jobs:
             BUILD_DURATION="${BUILD_DURATION}${SECS}s"
 
             CAPTION=$(printf '<b>OrangeFox R%s</b> for OPPO A16\n- <b>Build Type:</b> Unofficial\n- <b>Build Date:</b> %s\n- <b>Build By:</b> <a href="https://github.com/%s">%s</a>\n- <b>Build Time:</b> %s\n\n◾<b>Download:</b> <a href="%s">Here</a>\n\n<b>MD5:</b> <code>%s</code>' \
-              "${{ inputs.MANIFEST_BRANCH }}" \
+              "${{ env.MANIFEST_BRANCH }}" \
               "${{ env.BUILD_DATE_PRETTY }}" \
               "${ACTOR_CLEAN}" \
               "${ACTOR_CLEAN}" \
