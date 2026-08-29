@@ -1,0 +1,34 @@
+# /mnt/vendor/persist holds the Trustonic TEE secure storage (Store_1.tf).
+# Without it mcDriverDaemon cannot load its trustlets and keymaster is useless.
+# Everything happens in "on init" because TWRP's init.rc does not necessarily
+# trigger post-fs, and /mnt/vendor does not exist in the recovery ramdisk.
+on init
+    mkdir /mnt 0755 root system
+    mkdir /mnt/vendor 0755 root root
+    mkdir /mnt/vendor/persist 0771 system system
+    wait /dev/block/by-name/persist
+    mount ext4 /dev/block/by-name/persist /mnt/vendor/persist rw nosuid nodev noatime noauto_da_alloc discard
+    chown system system /mnt/vendor/persist
+    chmod 0771 /mnt/vendor/persist
+    restorecon /mnt/vendor/persist
+
+    mkdir /mnt/vendor/persist/mcRegistry 0771 system system
+    chmod 0771 /mnt/vendor/persist/mcRegistry
+
+on post-fs-data
+    mkdir /data/vendor/key_provisioning 0771 system system
+
+on property:ro.crypto.state=unencrypted
+    write /proc/bootprof "MOBICORE: create /data/vendor/mcRegistry ++ (unencrypted)"
+    mkdir /data/vendor/mcRegistry 0775 system system
+    write /proc/bootprof "MOBICORE: create /data/vendor/mcRegistry -- (unencrypted)"
+
+on property:ro.crypto.type=file && property:ro.crypto.state=encrypted
+    write /proc/bootprof "MOBICORE: create /data/vendor/mcRegistry ++ (FBE encrypted)"
+    mkdir /data/vendor/mcRegistry 0775 system system
+    write /proc/bootprof "MOBICORE: create /data/vendor/mcRegistry -- (FBE encrypted)"
+
+on property:vold.decrypt=trigger_restart_framework
+    write /proc/bootprof "MOBICORE: create /data/vendor/mcRegistry ++ (FDE encrypted)"
+    mkdir /data/vendor/mcRegistry 0775 system system
+    write /proc/bootprof "MOBICORE: create /data/vendor/mcRegistry -- (FDE encrypted)"

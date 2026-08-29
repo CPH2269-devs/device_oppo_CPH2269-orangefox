@@ -1,0 +1,71 @@
+import /tee.rc
+
+on init
+    export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/hw:/system/lib64/hw
+
+on fs
+    install_keyring
+
+service mobicore /vendor/bin/mcDriverDaemon --P1 /mnt/vendor/persist/mcRegistry \
+	-r /vendor/app/mcRegistry/020f0000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/05120000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/020b0000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/05070000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/030b0000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/06090000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/9073f03a9618383bb1856eb3f990babd.drbin \
+	-r /vendor/app/mcRegistry/07170000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/07150000000000000000000000000000.drbin \
+	-r /vendor/app/mcRegistry/09070000000000000000000000000000.drbin
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+service keymaster-4-0-trustonic /system/bin/android.hardware.keymaster@4.0-service.trustonic
+    user root
+    group root drmrpc
+    disabled
+    seclabel u:r:recovery:s0
+
+service gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+service cryptoeng-1-0 /system/bin/hw/vendor.oplus.hardware.cryptoeng@1.0-service
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
+
+service health-hal-2-1 /system/bin/android.hardware.health@2.1-service
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+on property:hwservicemanager.ready=true
+    start mobicore
+    start health-hal-2-1
+    start cryptoeng-1-0
+
+on property:mobicore.ready=true
+    start keymaster-4-0-trustonic
+    start gatekeeper-1-0
+
+on property:ro.crypto.state=encrypted
+    start mobicore
+    start keymaster-4-0-trustonic
+    start gatekeeper-1-0
+    start cryptoeng-1-0
+
+service fastboot /system/bin/fastbootd
+    class late_start
+    shutdown critical
+    oneshot
+
+on property:sys.usb.config=adb && property:sys.usb.ffs.ready=1
+    start adbd

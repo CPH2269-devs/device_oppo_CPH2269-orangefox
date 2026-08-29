@@ -1,0 +1,33 @@
+# Boot & Firmware Core
+/boot            emmc    /dev/block/by-name/boot            flags=display="Boot";backup=1;flashimg=1
+/recovery        emmc    /dev/block/by-name/recovery        flags=display="Recovery";backup=1;flashimg=1
+/dtbo            emmc    /dev/block/by-name/dtbo            flags=display="DTBO";backup=1;flashimg=1
+/vbmeta          emmc    /dev/block/by-name/vbmeta          flags=display="VBMeta";backup=1;flashimg=1
+/vbmeta_system   emmc    /dev/block/by-name/vbmeta_system   flags=display="VBMeta System";backup=1;flashimg=1
+/vbmeta_vendor   emmc    /dev/block/by-name/vbmeta_vendor   flags=display="VBMeta Vendor";backup=1;flashimg=1
+/logo            emmc    /dev/block/by-name/logo            flags=display="Logo";backup=1
+/misc            emmc    /dev/block/by-name/para            flags=display="Misc"
+
+# NVRAM & IMEI (MediaTek)
+/nvram           emmc    /dev/block/by-name/nvram           flags=display="NVRAM";backup=1
+/nvdata          ext4    /dev/block/by-name/nvdata          flags=display="NVDATA";backup=1;subpartitionof=/nvram
+/nvcfg           ext4    /dev/block/by-name/nvcfg           flags=display="NVCFG";backup=1;subpartitionof=/nvram
+/protect_f       ext4    /dev/block/by-name/protect1        flags=display="Protect F";backup=1
+/protect_s       ext4    /dev/block/by-name/protect2        flags=display="Protect S";backup=1
+/persistent      emmc    /dev/block/by-name/frp             flags=display="FRP";backup=1
+/proinfo         emmc    /dev/block/by-name/proinfo         flags=display="Proinfo";backup=1
+
+# Super Partitions (dynamic)
+/odm             ext4    /dev/block/by-name/odm             flags=display="ODM";backup=1
+/my_product      ext4    /dev/block/by-name/my_product      flags=display="My Product";backup=1
+/my_engineering  ext4    /dev/block/by-name/my_engineering  flags=display="My Engineering";backup=1
+/my_company      ext4    /dev/block/by-name/my_company      flags=display="My Company";backup=1
+/my_carrier      ext4    /dev/block/by-name/my_carrier      flags=display="My Carrier";backup=1
+/my_region       ext4    /dev/block/by-name/my_region       flags=display="My Region";backup=1
+/my_heytap       ext4    /dev/block/by-name/my_heytap       flags=display="My Heytap";backup=1
+/my_stock        ext4    /dev/block/by-name/my_stock        flags=display="My Stock";backup=1
+/my_preload      ext4    /dev/block/by-name/my_preload      flags=display="My Preload";backup=1
+
+# External Storage
+/external_sd     auto    /dev/block/mmcblk1p1  /dev/block/mmcblk1  flags=display="MicroSD";storage;wipeingui;removable
+/usb_otg         auto    /dev/block/sda1       /dev/block/sda      flags=display="USB-OTG";storage;wipeingui;removable
