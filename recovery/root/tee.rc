@@ -1,19 +1,50 @@
 # /mnt/vendor/persist holds the Trustonic TEE secure storage (Store_1.tf).
 # Without it mcDriverDaemon cannot load its trustlets and keymaster is useless.
+#
 # Everything happens in "on init" because TWRP's init.rc does not necessarily
 # trigger post-fs, and /mnt/vendor does not exist in the recovery ramdisk.
+#
+# IMPORTANT: we must NOT use `wait /dev/block/by-name/persist` here. TWRP only
+# creates the /dev/block/by-name/* symlinks during partition processing, which
+# runs AFTER init's "on init" phase, so that wait would hang forever and the
+# persist mount would never happen -> Store_1.tf can never be created -> the
+# Trustonic keymaster cannot unwrap the metadata key -> /data decrypt fails.
+# Instead we resolve the persist node ourselves (the kernel-created platform
+# bootdevice link is present at init time) and mount with a bounded retry loop
+# driven from init via `exec`, so it always completes before the TEE services.
 on init
     mkdir /mnt 0755 root system
     mkdir /mnt/vendor 0755 root root
     mkdir /mnt/vendor/persist 0771 system system
-    wait /dev/block/by-name/persist
-    mount ext4 /dev/block/by-name/persist /mnt/vendor/persist rw nosuid nodev noatime noauto_da_alloc discard
-    chown system system /mnt/vendor/persist
-    chmod 0771 /mnt/vendor/persist
-    restorecon /mnt/vendor/persist
-
     mkdir /mnt/vendor/persist/mcRegistry 0771 system system
+    chmod 0771 /mnt/vendor/persist
     chmod 0771 /mnt/vendor/persist/mcRegistry
+    exec u:r:recovery:s0 root root -- /system/bin/sh -c '
+        P=
+        for p in /dev/block/platform/bootdevice/by-name/persist \
+                 /dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/persist \
+                 /dev/block/by-name/persist; do
+            [ -e "$p" ] && P=$p && break
+        done
+        i=0
+        while [ -z "$P" ] && [ $i -lt 200 ]; do
+            sleep 0.1
+            for p in /dev/block/platform/bootdevice/by-name/persist \
+                     /dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/persist \
+                     /dev/block/by-name/persist; do
+                [ -e "$p" ] && P=$p && break
+            done
+            i=$((i+1))
+        done
+        if [ -n "$P" ]; then
+            mount -t ext4 -o rw,nosuid,nodev,noatime,noauto_da_alloc,discard "$P" /mnt/vendor/persist
+        else
+            echo "TEE: persist node not found" > /dev/kmsg
+            exit 0
+        fi
+    '
+    restorecon /mnt/vendor/persist
+    setprop tee.persist.ready true
 
 on post-fs-data
     mkdir /data/vendor/key_provisioning 0771 system system
