@@ -87,23 +87,9 @@ BOARD_INCLUDE_RECOVERY_DTBO := true
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 
-# Security patch level / platform version.
-# Keymaster version-binds the metadata-encryption keyblob (os_version,
-# os_patchlevel, vendor_patchlevel), so these must match the stock ROM that
-# created the key. Otherwise begin() fails with -62 (KEY_REQUIRES_UPGRADE) and
-# the Trustonic TEE rejects the upgrade with -38, and /data never decrypts.
-# ro.build.version.release comes from PLATFORM_VERSION_LAST_STABLE, not from
-# PLATFORM_VERSION, so both have to be pinned to 11.
-PLATFORM_VERSION_LAST_STABLE := 11
-PLATFORM_VERSION := 11
+PLATFORM_VERSION := 16.1.0
 PLATFORM_SECURITY_PATCH := 2021-08-05
 VENDOR_SECURITY_PATCH := 2021-08-05
-# The TEE binds metadata-encryption keys to the BOOT security patch as well as
-# os/vendor patch. Our recovery was emitting the OrangeFox/OSF future default
-# (boot_patchlevel = 2030-01-01), but the stock firmware binds boot_patchlevel
-# = 2021-08-05 (stock vbmeta com.android.build.boot.security_patch). Mismatch
-# makes TEE_Begin return -62 (KEY_REQUIRES_UPGRADE). Pin it to the stock value.
-BOOT_SECURITY_PATCH := 2021-08-05
 
 # Verified Boot
 BOARD_AVB_ENABLE := true

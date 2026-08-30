@@ -19,6 +19,12 @@ PRODUCT_PACKAGES += \
     android.hardware.fastboot@1.0-impl-mock \
     fastbootd
 
+# Security patch
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.bootimage.build.security_patch=2021-08-05 \
+    ro.vendor.build.security_patch=2021-08-05 \
+    ro.build.version.security_patch=2021-08-05
+
 # Decryption & Security HALs
 PRODUCT_PACKAGES += \
     android.hardware.gatekeeper@1.0-service \
