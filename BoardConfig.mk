@@ -59,6 +59,15 @@ BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo
 BOARD_KERNEL_SEPARATED_DTBO := 
 endif
 
+# Trustonic TEE verified-boot patch level.
+# The TEE's verifiedBoot_GetBootPatchlevel reads the boot image header
+# os_patch_level field. If it is left zero, the TEE falls back to a hardcoded
+# future value (2030-01-01) which mismatches the stock 2021-08-05 keyblob binding
+# and forces TEE_Begin to fail with -62/-38 (so /data never decrypts). Lock the
+# boot image os_patch_level and os_version to the stock values (11.0.0 /
+# 2021-08-05) via mkbootimg.
+BOARD_MKBOOTIMG_ARGS += --os_version 11.0.0 --os_patch_level 2021-08-05
+
 # Partitions
 BOARD_FLASH_BLOCK_SIZE := 131072 # (BOARD_KERNEL_PAGESIZE * 64)
 BOARD_BOOTIMAGE_PARTITION_SIZE := 33554432
@@ -87,9 +96,23 @@ BOARD_INCLUDE_RECOVERY_DTBO := true
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 
-PLATFORM_VERSION := 16.1.0
+# Security patch level / platform version.
+# Keymaster version-binds the metadata-encryption keyblob (os_version,
+# os_patchlevel, vendor_patchlevel), so these must match the stock ROM that
+# created the key. Otherwise begin() fails with -62 (KEY_REQUIRES_UPGRADE) and
+# the Trustonic TEE rejects the upgrade with -38, so /data never decrypts.
+# ro.build.version.release comes from PLATFORM_VERSION_LAST_STABLE, not from
+# PLATFORM_VERSION, so both have to be pinned to 11 to match the stock OPPO A16
+# firmware the encrypted userdata was created under.
+PLATFORM_VERSION_LAST_STABLE := 11
+PLATFORM_VERSION := 11
 PLATFORM_SECURITY_PATCH := 2021-08-05
 VENDOR_SECURITY_PATCH := 2021-08-05
+# The TEE also binds the metadata-keyblob to the BOOT security patch / boot
+# image os_patch_level. Our build was emitting the OrangeFox/OSF future default
+# (2030-01-01) while stock firmware binds boot_patchlevel = 2021-08-05. Pin it
+# back to the stock value so the key blob unwraps instead of KEY_REQUIRES_UPGRADE.
+BOOT_SECURITY_PATCH := 2021-08-05
 
 # Verified Boot
 BOARD_AVB_ENABLE := true
