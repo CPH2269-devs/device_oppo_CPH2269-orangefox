@@ -8,6 +8,9 @@
 /logo            emmc    /dev/block/by-name/logo            flags=display="Logo";backup=1
 /misc            emmc    /dev/block/by-name/para            flags=display="Misc"
 
+# Dynamic partition
+/system          ext4    /dev/block/by-name/system          flags=display="System";backup=1;wipeingui;flashimg=1
+
 # NVRAM & IMEI (MediaTek)
 /nvram           emmc    /dev/block/by-name/nvram           flags=display="NVRAM";backup=1
 /nvdata          ext4    /dev/block/by-name/nvdata          flags=display="NVDATA";backup=1;subpartitionof=/nvram
@@ -31,3 +34,6 @@
 # External Storage
 /external_sd     auto    /dev/block/mmcblk1p1  /dev/block/mmcblk1  flags=display="MicroSD";storage;wipeingui;removable
 /usb_otg         auto    /dev/block/sda1       /dev/block/sda      flags=display="USB-OTG";storage;wipeingui;removable
+
+# Other
+/lk              emmc    /dev/block/by-name/lk              flags=display="LK";backup=1;flashimg=1
