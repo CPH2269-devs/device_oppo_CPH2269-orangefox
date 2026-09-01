@@ -1,8 +1,13 @@
 # Dynamic Partitions (Super)
-system                  /system             ext4    ro      wait,logical,first_stage_mount
-vendor                  /vendor             ext4    ro      wait,logical,first_stage_mount
-product                 /product            ext4    ro      wait,logical,first_stage_mount
-my_odm                  /odm                ext4    ro      wait,logical,first_stage_mount,nofail
+# System-as-root: mount the "system" logical partition at the android root.
+# TWRP/OrangeFox maps this entry to /system_root; declaring /system here makes
+# it try to resolve a partition mounted at /system_root (which does not exist),
+# producing "unable to update logical partition: /system_root".
+system                  /                   ext4    ro,barrier=1    wait,logical
+vendor                  /vendor             ext4    ro,barrier=1    wait,logical
+product                 /product            ext4    ro,barrier=1    wait,logical
+# NOTE: the logical partition name in super is "odm", not "my_odm".
+odm                     /odm                ext4    ro,barrier=1    wait,logical,nofail
 my_product              /my_product         ext4    ro      wait,logical,first_stage_mount,nofail
 my_engineering          /my_engineering     ext4    ro      wait,logical,first_stage_mount,nofail
 my_company              /my_company         ext4    ro      wait,logical,first_stage_mount,nofail

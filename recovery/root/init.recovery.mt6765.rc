@@ -3,6 +3,18 @@ import /tee.rc
 on init
     export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/hw:/system/lib64/hw
 
+    # libdm (fs_mgr/dm) opens /dev/device-mapper to create dm-linear maps for
+    # dynamic (super) logical partitions. On this MTK platform the kernel's
+    # device-mapper core is built in but devtmpfs/ueventd never emits the
+    # control-node uevent, so the node is absent at init time and every
+    # "unable to update logical partition: <name>" / "Failed to mount"
+    # (Invalid argument, empty block device) in the logs follows from it.
+    # Create the control node before the recovery binary parses recovery.fstab
+    # (device-mapper control is a misc device: major 10, minor 236).
+    mkdir /dev/mapper 0755 root root
+    mknod /dev/device-mapper c 10 236 0600 root root
+    symlink /dev/device-mapper /dev/mapper/control
+
 on fs
     install_keyring
 
