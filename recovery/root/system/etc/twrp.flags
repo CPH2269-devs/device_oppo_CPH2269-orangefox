@@ -8,6 +8,11 @@
 /logo            emmc    /dev/block/by-name/logo            flags=display="Logo";backup=1
 /misc            emmc    /dev/block/by-name/para            flags=display="Misc"
 
+# Dynamic partitions (super). These resolve to their dm-linear mapped devices
+# via the by-name symlinks created during fstab processing.
+/system_root     ext4    /dev/block/by-name/system          flags=display="System";backup=1;wipeingui;flashimg=1
+/vendor          ext4    /dev/block/by-name/vendor          flags=display="Vendor";backup=1;wipeingui;flashimg=1
+/product         ext4    /dev/block/by-name/product         flags=display="Product";backup=1;wipeingui;flashimg=1
 # NVRAM & IMEI (MediaTek)
 /nvram           emmc    /dev/block/by-name/nvram           flags=display="NVRAM";backup=1
 /nvdata          ext4    /dev/block/by-name/nvdata          flags=display="NVDATA";backup=1;subpartitionof=/nvram
