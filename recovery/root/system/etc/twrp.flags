@@ -32,6 +32,7 @@
 /my_heytap       ext4    /dev/block/by-name/my_heytap       flags=display="My Heytap";backup=1
 /my_stock        ext4    /dev/block/by-name/my_stock        flags=display="My Stock";backup=1
 /my_preload      ext4    /dev/block/by-name/my_preload      flags=display="My Preload";backup=1
+/my_manifest     ext4    /dev/block/by-name/my_manifest     flags=display="My Manifest";backup=1
 
 # External Storage
 /external_sd     auto    /dev/block/mmcblk1p1  /dev/block/mmcblk1  flags=display="MicroSD";storage;wipeingui;removable
